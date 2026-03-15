@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart Study Assistant</title>
+  <style>
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1a1a2e);
+      background-size: 400% 400%;
+      animation: gradientShift 10s ease infinite;
+      color: #e2e8f0;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 750px; margin: 0 auto; }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .subtitle { color: #94a3b8; margin-bottom: 30px; font-size: 16px; }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.5s ease;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: 'Segoe UI', sans-serif;
+      resize: vertical;
+      outline: none;
+      background: rgba(255,255,255,0.07);
+      color: #e2e8f0;
+      transition: border 0.3s;
+    }
+
+    textarea:focus { border-color: #a78bfa; }
+    textarea::placeholder { color: #64748b; }
+
+    .upload-box {
+      border: 2px dashed rgba(167,139,250,0.4);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      margin: 12px 0;
+      transition: border 0.3s;
+      cursor: pointer;
+    }
+
+    .upload-box:hover { border-color: #a78bfa; }
+
+    .upload-label {
+      cursor: pointer;
+      color: #a78bfa;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .mode-options { display: flex; gap: 12px; margin: 16px 0; }
+
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #94a3b8;
+      transition: all 0.3s;
+      background: rgba(255,255,255,0.03);
+    }
+
+    input[type="radio"] { display: none; }
+
+    input[type="radio"]:checked + .mode-btn {
+      border-color: #a78bfa;
+      background: rgba(167,139,250,0.15);
+      color: #a78bfa;
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(90deg, #7c3aed, #2563eb);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.3s;
+      animation: pulse 2s infinite;
+    }
+
+    .generate-btn:hover {
+      background: linear-gradient(90deg, #6d28d9, #1d4ed8);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(124,58,237,0.4);
+    }
+
+    /* Loading spinner */
+    #loading {
+      display: none;
+      text-align: center;
+      padding: 16px;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(167,139,250,0.2);
+      border-top: 3px solid #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    #loading p { color: #a78bfa; font-size: 14px; }
+
+    /* Flashcard flip */
+    .flip-card {
+      perspective: 1000px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      height: 140px;
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+
+    .flip-card:hover .flip-card-inner,
+    .flip-card.flipped .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-front, .flip-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .flip-front {
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(167,139,250,0.3);
+      color: #c4b5fd;
+      font-weight: 500;
+      font-size: 15px;
+    }
+
+    .flip-back {
+      background: rgba(37,99,235,0.2);
+      border: 1px solid rgba(96,165,250,0.3);
+      color: #93c5fd;
+      transform: rotateY(180deg);
+      font-size: 14px;
+    }
+
+    .flip-hint {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    /* Quiz cards */
+    .result-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      animation: fadeInUp 0.4s ease;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .result-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    .result-card h3 { color: #a78bfa; margin-bottom: 10px; font-size: 15px; }
+    .result-card p { color: #cbd5e1; line-height: 1.7; }
+
+    .option {
+      padding: 10px 14px;
+      margin: 6px 0;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      font-size: 14px;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .option:hover { background: rgba(167,139,250,0.1); border-color: #a78bfa; }
+
+    .answer {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: rgba(52,211,153,0.1);
+      border-left: 3px solid #34d399;
+      border-radius: 4px;
+      color: #6ee7b7;
+      font-size: 14px;
+    }
+
+    .results-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+    }
+
+    .count-label { font-size: 14px; color: #94a3b8; font-weight: 500; }
+    .count-label span { color: #a78bfa; font-weight: 700; }
+
+    input[type="range"] { width: 100%; accent-color: #a78bfa; margin-top: 10px; }
+
+    .error-box {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <h1>✨ Smart Study Assistant</h1>
+    <p class="subtitle">Paste your notes and let AI do the work</p>
+
+    {% if error %}
+    <div class="error-box">⚠️ {{ error }}</div>
+    {% endif %}
+
+    <div class="card">
+      <form method="POST" action="/generate" onsubmit="showLoading()" enctype="multipart/form-data">
+
+        <textarea name="notes" rows="8" placeholder="Paste your notes here..."></textarea>
+
+        <div style="margin: 12px 0; text-align:center; color:#475569; font-size:13px;">— or upload a file —</div>
+
+        <div class="upload-box">
+          <input type="file" name="upload_file" accept=".pdf,.docx,.txt,.xlsx,.pptx" id="file-input" style="display:none;" onchange="showFileName(this)">
+          <label for="file-input" class="upload-label">📁 Click to upload file</label>
+          <p style="font-size:11px; color:#475569; margin-top:4px;">PDF, Word, PowerPoint, Excel, TXT</p>
+          <p id="file-name" style="font-size:13px; color:#a78bfa; margin-top:8px; font-weight:500;"></p>
+        </div>
+
+        <div class="mode-options">
+          <label><input type="radio" name="mode" value="summary" checked><div class="mode-btn">📝 Summary</div></label>
+          <label><input type="radio" name="mode" value="flashcards"><div class="mode-btn">🃏 Flashcards</div></label>
+          <label><input type="radio" name="mode" value="quiz"><div class="mode-btn">📊 Quiz</div></label>
+        </div>
+
+        <div id="count-selector" style="margin: 16px 0; display:none;">
+          <div class="count-label">How many do you want? <span id="count-display">5</span></div>
+          <input type="range" name="count" id="count-slider" min="3" max="15" value="{{ count if count else 5 }}"
+            oninput="document.getElementById('count-display').innerText = this.value">
+          <div style="display:flex; justify-content:space-between; font-size:12px; color:#475569;">
+            <span>3</span><span>15</span>
+          </div>
+        </div>
+
+        <div id="loading">
+          <div class="spinner"></div>
+          <p>AI is thinking...</p>
+        </div>
+
+        <button type="submit" class="generate-btn">⚡ Generate</button>
+
+      </form>
+    </div>
+
+    {% if mode == "summary" and summary %}
+      <p class="results-title">📝 Summary</p>
+      <div class="result-card"><p>{{ summary }}</p></div>
+    {% endif %}
+
+    {% if mode == "flashcards" and flashcards %}
+      <p class="results-title">🃏 Flashcards</p>
+      <p class="flip-hint">👆 Click a card to reveal the answer</p>
+      {% for card in flashcards %}
+        <div class="flip-card" onclick="this.classList.toggle('flipped')">
+          <div class="flip-card-inner">
+            <div class="flip-front">Q{{ loop.index }}: {{ card.question }}</div>
+            <div class="flip-back">{{ card.answer }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if mode == "quiz" and quiz %}
+      <p class="results-title">📊 Quiz</p>
+      {% for item in quiz %}
+        <div class="result-card">
+          <h3>{{ loop.index }}. {{ item.question }}</h3>
+          {% for option in item.options %}
+            <div class="option" onclick="checkAnswer(this, '{{ item.answer }}')" style="cursor:pointer;">{{ option }}</div>
+          {% endfor %}
+          <div class="answer" id="answer-{{ loop.index }}" style="display:none;">✅ Correct: {{ item.answer }}</div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+  </div>
+
+  <script>
+    function showLoading() {
+      document.getElementById('loading').style.display = 'block';
+      document.querySelector('.generate-btn').style.display = 'none';
+    }
+
+    function showFileName(input) {
+      const fileName = input.files[0] ? input.files[0].name : '';
+      document.getElementById('file-name').innerText = fileName;
+    }
+
+    function checkAnswer(selected, correct) {
+      const card = selected.closest('.result-card');
+      const options = card.querySelectorAll('.option');
+      const answerBox = card.querySelector('.answer');
+      options.forEach(opt => {
+        opt.style.pointerEvents = 'none';
+        if (opt.innerText.trim() === correct.trim()) {
+          opt.style.background = 'rgba(52,211,153,0.15)';
+          opt.style.borderColor = '#34d399';
+          opt.style.color = '#6ee7b7';
+        } else if (opt === selected) {
+          opt.style.background = 'rgba(239,68,68,0.15)';
+          opt.style.borderColor = '#ef4444';
+          opt.style.color = '#fca5a5';
+        }
+      });
+      answerBox.style.display = 'block';
+    }
+
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        const slider = document.getElementById('count-selector');
+        slider.style.display = (this.value === 'flashcards' || this.value === 'quiz') ? 'block' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>
